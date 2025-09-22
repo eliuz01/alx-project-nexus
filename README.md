@@ -32,3 +32,30 @@ This repository contains my final project for the **ALX ProDev Backend Engineeri
 * Always document APIs for ease of use and collaboration
 * Security and scalability must be built in from the start
 * Continuous learning and adaptability are as important as technical skills
+
+```
+alx-project-nexus
+├─ AAKenyaShop
+│  ├─ asgi.py
+│  ├─ settings.py
+│  ├─ urls.py
+│  ├─ wsgi.py
+│  ├─ __init__.py
+│  └─ __pycache__
+│     ├─ settings.cpython-313.pyc
+│     └─ __init__.cpython-313.pyc
+├─ AAShop
+│  ├─ admin.py
+│  ├─ apps.py
+│  ├─ migrations
+│  │  └─ __init__.py
+│  ├─ models.py
+│  ├─ tests.py
+│  ├─ views.py
+│  └─ __init__.py
+├─ documentation
+├─ manage.py
+├─ README.md
+├─ Untitled Diagram.drawio
+└─ venv
+   
