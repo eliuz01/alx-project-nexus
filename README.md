@@ -33,29 +33,76 @@ This repository contains my final project for the **ALX ProDev Backend Engineeri
 * Security and scalability must be built in from the start
 * Continuous learning and adaptability are as important as technical skills
 
-```
-alx-project-nexus
-├─ AAKenyaShop
-│  ├─ asgi.py
-│  ├─ settings.py
-│  ├─ urls.py
-│  ├─ wsgi.py
-│  ├─ __init__.py
-│  └─ __pycache__
-│     ├─ settings.cpython-313.pyc
-│     └─ __init__.cpython-313.pyc
-├─ AAShop
-│  ├─ admin.py
-│  ├─ apps.py
-│  ├─ migrations
-│  │  └─ __init__.py
-│  ├─ models.py
-│  ├─ tests.py
-│  ├─ views.py
-│  └─ __init__.py
-├─ documentation
-├─ manage.py
-├─ README.md
-├─ Untitled Diagram.drawio
-└─ venv
-   
+## Models Overview 
+### User
+
+A custom user model based on AbstractUser.
+Uses email as the login field instead of just username.
+Can log in, authenticate via JWT, and place orders.
+
+### Category
+
+Groups products logically.
+Example: Electronics, Books, Fashion.
+Each category can have multiple products.
+
+### Product
+
+Belongs to a Category.
+Stores product details: name, description, price, stock.
+Example:
+Category: Electronics
+Product: Samsung Galaxy S22, $699, 10 in stock
+
+### Order
+
+Represents a checkout event.
+Belongs to a User.
+Has a status (Pending, Paid, Shipped, Cancelled).
+Stores total_price (sum of all OrderItems).
+Automatically tracks timestamps (created_at, updated_at).
+
+### OrderItem
+
+Represents one product line inside an Order.
+Stores:
+product (e.g., Samsung Galaxy S22)
+quantity (e.g., 2 units)
+price (snapshot of product price at the time of order → prevents price changes from affecting old orders).
+
+## Ordering Flow
+
+### Step 1 – User Browses Products
+Customer fetches products via API (GET /products/).
+Products can be filtered by category, sorted by price, or paginated.
+
+### Step 2 – User Adds Products to Cart
+
+When the customer clicks “Add to Cart”:
+A new Order is created with status=PENDING (if none exists).
+An OrderItem is added linking that product with quantity.
+Example:
+
+Order #101 (Pending, User: eliuz@example.com
+)
+1 × Samsung Galaxy S22 @ $699
+
+2 × Wireless Charger @ $29
+
+### Step 3 – Checkout
+
+When the customer checks out:
+System calculates total_price = sum(order.items.price × quantity).
+Order status remains PENDING until payment is confirmed.
+
+### Step 4 – Payment
+
+After successful payment:
+Order status = PAID.
+Stock is reduced for each product purchased.
+
+### Step 5 – Shipping
+
+Admin or system updates status:
+SHIPPED when dispatched.
+CANCELLED if customer cancels or payment fails.
