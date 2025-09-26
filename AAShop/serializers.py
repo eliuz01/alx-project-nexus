@@ -1,23 +1,15 @@
 from rest_framework import serializers
-from .models import User, Category, Product, Order, OrderItem
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["id", "username", "email", "is_staff"]
+from .models import Category, Product, Order, OrderItem, User
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name"]
+        fields = "__all__"
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(),
-        source="category",
-        write_only=True
+        queryset=Category.objects.all(), source="category", write_only=True
     )
 
     class Meta:
@@ -27,18 +19,21 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(),
-        source="product",
-        write_only=True
+        queryset=Product.objects.all(), source="product", write_only=True
     )
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product", "product_id", "quantity"]
+        fields = ["id", "order", "product", "product_id", "quantity"]
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
+    items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
-        fields = ["id", "user", "created_at", "status", "items"]
+        fields = ["id", "user", "total_price", "status", "created_at", "updated_at", "items"]
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "is_staff", "is_active"]
