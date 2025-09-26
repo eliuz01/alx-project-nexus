@@ -16,8 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
-
-
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -26,11 +24,13 @@ schema_view = get_schema_view(
     openapi.Info(
         title="AAKenyaShop API",
         default_version='v1',
-        description="E-Commerce Backend API",
+        description="API documentation for AAKenyaShop",
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
+    authentication_classes=[],
 )
+
 
 
 urlpatterns = [

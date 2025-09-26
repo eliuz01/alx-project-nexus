@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+*.manifest
+*.spec
+
+# Django stuff
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media/
+*.mo
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Migrations (keep if you want DB history, ignore otherwise)
+*/migrations/__pycache__/
+*.sqlite3
+
+# Coverage / testing
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+junit.xml
+
+# Static files
+staticfiles/
