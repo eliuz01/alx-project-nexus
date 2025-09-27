@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
+import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -143,6 +146,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "COERCE_DECIMAL_TO_STRING": True,
 }
 
 SWAGGER_SETTINGS = {
@@ -157,10 +161,18 @@ SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": False,  #disables Basic auth
 }
 
-import environ
-env = environ.Env()
-environ.Env.read_env()  # loads .env
 
-CHAPA_SECRET_KEY = "CHASECK_TEST-MeqvEcCb6u9iLMl1Gdu4efFtZYZWtBoP"
-CHAPA_PUBLIC_KEY = "CHAPUBK_TEST-SdqcTlYleVDGtfbMt2c6ZPAj8ULjJVwG"
-CHAPA_BASE_URL = "https://api.chapa.co/v1"
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+CHAPA_SECRET_KEY = env("CHAPA_SECRET_KEY")
+CHAPA_PUBLIC_KEY = env("CHAPA_PUBLIC_KEY")
+CHAPA_ENCRYPTION_KEY = env("CHAPA_ENCRYPTION_KEY")
+CHAPA_BASE_URL = env("CHAPA_BASE_URL", default="https://api.chapa.co/v1")
+
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # adjust if you want
+}

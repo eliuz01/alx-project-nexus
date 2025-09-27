@@ -1,12 +1,14 @@
 from rest_framework import viewsets
 from .models import Category, Product, Order, User, Payment
-from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer
+from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer, PaymentInitiateRequestSerializer
 import requests
 import uuid
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -25,23 +27,26 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+@swagger_auto_schema(
+    method="post",
+    request_body=PaymentInitiateRequestSerializer,
+    responses={200: PaymentSerializer}
+)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def initiate_payment(request):
-    amount = request.data.get("amount")
-    currency = request.data.get("currency", "ETB")
-    email = request.data.get("email", "test@example.com")
-    first_name = request.data.get("first_name", "John")
-    last_name = request.data.get("last_name", "Doe")
+    serializer = PaymentInitiateRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
 
-    tx_ref = str(uuid.uuid4())  # generate unique reference
+    tx_ref = str(uuid.uuid4())
 
     payload = {
-        "amount": amount,
-        "currency": currency,
-        "email": email,
-        "first_name": first_name,
-        "last_name": last_name,
+        "amount": str(data["amount"]), 
+        "currency": data["currency"],
+        "email": data["email"],
+        "first_name": data["first_name"],
+        "last_name": data["last_name"],
         "tx_ref": tx_ref,
         "callback_url": "http://127.0.0.1:8000/api/payments/verify/",
         "return_url": "http://127.0.0.1:8000/payment/success/",
@@ -58,38 +63,49 @@ def initiate_payment(request):
         headers=headers,
     )
 
-    data = response.json()
+    chapa_data = response.json()
 
-    # save payment record
     payment = Payment.objects.create(
         tx_ref=tx_ref,
-        amount=amount,
-        currency=currency,
+        amount=data["amount"],
+        currency=data["currency"],
         status="pending",
     )
 
-    return Response({"chapa_response": data, "payment": PaymentSerializer(payment).data})
+    return Response(
+        {"chapa_response": chapa_data, "payment": PaymentSerializer(payment).data}
+    )
 
 
+@swagger_auto_schema(
+    method="get",
+    manual_parameters=[
+        openapi.Parameter(
+            "tx_ref",
+            openapi.IN_PATH,
+            description="Transaction reference to verify",
+            type=openapi.TYPE_STRING,
+            required=True,
+        )
+    ],
+    responses={200: PaymentSerializer}
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def verify_payment(request, tx_ref):
-    headers = {
-        "Authorization": f"Bearer {settings.CHAPA_SECRET_KEY}",
-    }
+    headers = {"Authorization": f"Bearer {settings.CHAPA_SECRET_KEY}"}
 
     response = requests.get(
         f"{settings.CHAPA_BASE_URL}/transaction/verify/{tx_ref}",
         headers=headers,
     )
-
     data = response.json()
 
     try:
         payment = Payment.objects.get(tx_ref=tx_ref)
-        if data.get("status") == "success":
+        if data.get("status") == "success" and data["data"].get("status") == "success":
             payment.status = "completed"
-            payment.transaction_id = data["data"]["id"]
+            payment.transaction_id = data["data"].get("reference")  # use reference instead of id
         else:
             payment.status = "failed"
         payment.save()

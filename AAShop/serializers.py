@@ -42,5 +42,14 @@ class UserSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['id','order','amount','currency','provider','transaction_id','checkout_url','status','created_at']
-        read_only_fields = ['transaction_id','checkout_url','status','created_at']
+        fields = ['id','tx_ref','amount','currency','transaction_id','status','created_at', 'updated_at']
+        read_only_fields = ['id', 'transaction_id','status','created_at','updated_at']
+
+
+class PaymentInitiateRequestSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    currency = serializers.CharField(required=False, default="ETB")
+    email = serializers.EmailField(required=False, default="test@example.com")
+    first_name = serializers.CharField(required=False, default="John")
+    last_name = serializers.CharField(required=False, default="Doe")
+
