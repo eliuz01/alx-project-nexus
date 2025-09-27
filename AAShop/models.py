@@ -70,6 +70,9 @@ class OrderItem(models.Model):
 
 
 class Payment(models.Model):
+    order = models.ForeignKey(
+        "Order", on_delete=models.CASCADE, related_name="payments", null=True, blank=True
+    )
     tx_ref = models.CharField(max_length=100, unique=True)  
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=10, default="ETB")  

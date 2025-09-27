@@ -47,6 +47,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class PaymentInitiateRequestSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     currency = serializers.CharField(required=False, default="ETB")
     email = serializers.EmailField(required=False, default="test@example.com")

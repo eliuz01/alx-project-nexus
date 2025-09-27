@@ -64,8 +64,11 @@ def initiate_payment(request):
     )
 
     chapa_data = response.json()
-
+    
+    
+    order = Order.objects.get(id=data["order_id"])
     payment = Payment.objects.create(
+        order=order,
         tx_ref=tx_ref,
         amount=data["amount"],
         currency=data["currency"],
