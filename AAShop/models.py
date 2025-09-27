@@ -67,3 +67,16 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+
+
+class Payment(models.Model):
+    tx_ref = models.CharField(max_length=100, unique=True)  
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default="ETB")  
+    status = models.CharField(max_length=20, default="pending") 
+    transaction_id = models.CharField(max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.tx_ref} - {self.status}"

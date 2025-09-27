@@ -156,3 +156,11 @@ SWAGGER_SETTINGS = {
     },
     "USE_SESSION_AUTH": False,  #disables Basic auth
 }
+
+import environ
+env = environ.Env()
+environ.Env.read_env()  # loads .env
+
+CHAPA_SECRET_KEY = "CHASECK_TEST-MeqvEcCb6u9iLMl1Gdu4efFtZYZWtBoP"
+CHAPA_PUBLIC_KEY = "CHAPUBK_TEST-SdqcTlYleVDGtfbMt2c6ZPAj8ULjJVwG"
+CHAPA_BASE_URL = "https://api.chapa.co/v1"
