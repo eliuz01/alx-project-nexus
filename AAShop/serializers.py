@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, Order, OrderItem, User, Payment
+from .models import Category, Product, Order, OrderItem, User, Payment, Cart, CartItem
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,3 +73,22 @@ class PaymentInitiateRequestSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False, default="John")
     last_name = serializers.CharField(required=False, default="Doe")
 
+class CartItemSerializer(serializers.ModelSerializer):
+    product = serializers.StringRelatedField(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), source="product", write_only=True
+    )
+
+    class Meta:
+        model = CartItem
+        fields = ["id", "product", "product_id", "quantity", "subtotal"]
+        read_only_fields = ["id", "subtotal"]
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cart
+        fields = ["id", "user", "items", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]

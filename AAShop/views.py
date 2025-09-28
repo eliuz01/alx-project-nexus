@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
-from .models import Category, Product, Order, User, Payment
-from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer, PaymentInitiateRequestSerializer, RegisterSerializer
+from .models import Category, Product, Order, User, Payment, CartItem, Cart
+from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer, PaymentInitiateRequestSerializer, RegisterSerializer, CartItemSerializer, CartSerializer
 import requests, uuid
 
 from django.conf import settings
@@ -166,4 +166,63 @@ def register_user(request):
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+def get_user_cart(user):
+    cart, created = Cart.objects.get_or_create(user=user)
+    return cart
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def view_cart(request):
+    cart = get_user_cart(request.user)
+    serializer = CartSerializer(cart)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_to_cart(request):
+    cart = get_user_cart(request.user)
+    serializer = CartItemSerializer(data=request.data)
+    if serializer.is_valid():
+        product = serializer.validated_data["product"]
+        quantity = serializer.validated_data["quantity"]
+
+        item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        if not created:
+            item.quantity += quantity
+        else:
+            item.quantity = quantity
+        item.save()
+
+        return Response(CartItemSerializer(item).data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_cart_item(request, item_id):
+    try:
+        item = CartItem.objects.get(id=item_id, cart__user=request.user)
+    except CartItem.DoesNotExist:
+        return Response({"error": "Item not found"}, status=404)
+
+    serializer = CartItemSerializer(item, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def remove_cart_item(request, item_id):
+    try:
+        item = CartItem.objects.get(id=item_id, cart__user=request.user)
+        item.delete()
+        return Response({"message": "Item removed"})
+    except CartItem.DoesNotExist:
+        return Response({"error": "Item not found"}, status=404)
     

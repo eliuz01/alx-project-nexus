@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CategoryViewSet, ProductViewSet, OrderViewSet, UserViewSet, initiate_payment, verify_payment, register_user
+from .views import CategoryViewSet, ProductViewSet, OrderViewSet, UserViewSet, initiate_payment, verify_payment, register_user, add_to_cart, view_cart, update_cart_item, remove_cart_item
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -16,6 +16,10 @@ urlpatterns = [
 
     # User registration endpoint
     path("api/register/", register_user, name="register"),
+    path("cart/", view_cart, name="view_cart"),
+    path("cart/add/", add_to_cart, name="add_to_cart"),
+    path("cart/update/<int:item_id>/", update_cart_item, name="update_cart_item"),
+    path("cart/remove/<int:item_id>/", remove_cart_item, name="remove_cart_item"),
 
     # JWT Auth endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
