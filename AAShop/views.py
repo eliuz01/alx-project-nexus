@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from .tasks import send_payment_confirmation_email
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -93,7 +94,7 @@ def initiate_payment(request):
     ],
     responses={200: PaymentSerializer}
 )
-@api_view(["GET"])
+@api_view(["GET"]) 
 @permission_classes([IsAuthenticated])
 def verify_payment(request, tx_ref):
     headers = {"Authorization": f"Bearer {settings.CHAPA_SECRET_KEY}"}
@@ -108,7 +109,13 @@ def verify_payment(request, tx_ref):
         payment = Payment.objects.get(tx_ref=tx_ref)
         if data.get("status") == "success" and data["data"].get("status") == "success":
             payment.status = "completed"
-            payment.transaction_id = data["data"].get("reference")  # use reference instead of id
+            payment.transaction_id = data["data"].get("reference") 
+
+            #trigger Celery task here
+            from .tasks import send_payment_confirmation_email
+            send_payment_confirmation_email.delay(
+                request.user.email, payment.order.id, str(payment.amount), payment.status
+            )
         else:
             payment.status = "failed"
         payment.save()
@@ -116,3 +123,30 @@ def verify_payment(request, tx_ref):
         return Response({"error": "Payment not found"}, status=404)
 
     return Response({"chapa_response": data, "payment": PaymentSerializer(payment).data})
+
+
+@api_view(["POST"])
+@permission_classes([])  # open endpoint, secured by signature later
+def chapa_webhook(request):
+    data = request.data
+    tx_ref = data.get("tx_ref")
+    status = data.get("status")
+
+    try:
+        payment = Payment.objects.get(tx_ref=tx_ref)
+        if status == "success":
+            payment.status = "completed"
+            payment.transaction_id = data.get("reference")
+            payment.save()
+            send_payment_confirmation_email.delay(
+                payment.order.user.email, payment.order.id, str(payment.amount), payment.status
+            )
+    except Payment.DoesNotExist:
+        pass
+
+    return Response({"message": "Webhook processed"}, status=200)
+
+
+
+
+    
