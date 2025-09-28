@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CategoryViewSet, ProductViewSet, OrderViewSet, UserViewSet, initiate_payment, verify_payment
+from .views import CategoryViewSet, ProductViewSet, OrderViewSet, UserViewSet, initiate_payment, verify_payment, register_user
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -14,9 +14,14 @@ router.register(r'users', UserViewSet, basename='user')
 urlpatterns = [
     path('', include(router.urls)),
 
+    # User registration endpoint
+    path("api/register/", register_user, name="register"),
+
     # JWT Auth endpoints
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+
+    # Payment endpoints
     path("payments/initiate/", initiate_payment, name="initiate_payment"),
     path("payments/verify/<str:tx_ref>/", verify_payment, name="verify_payment"),
 ]

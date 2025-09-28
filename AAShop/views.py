@@ -1,11 +1,11 @@
 from rest_framework import viewsets, status
 from .models import Category, Product, Order, User, Payment
-from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer, PaymentInitiateRequestSerializer
-import requests
-import uuid
+from .serializers import CategorySerializer, ProductSerializer, OrderSerializer, UserSerializer, PaymentSerializer, PaymentInitiateRequestSerializer, RegisterSerializer
+import requests, uuid
+
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -146,6 +146,15 @@ def chapa_webhook(request):
 
     return Response({"message": "Webhook processed"}, status=200)
 
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register_user(request):
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
