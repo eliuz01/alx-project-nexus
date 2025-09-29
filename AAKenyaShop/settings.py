@@ -180,5 +180,5 @@ SIMPLE_JWT = {
 }
 
 
-CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
-CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='rpc://')
+#CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
+#CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='rpc://')
