@@ -173,8 +173,8 @@ CHAPA_BASE_URL = env("CHAPA_BASE_URL", default="https://api.chapa.co/v1")
 
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # adjust if you want
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  
 }
 
 

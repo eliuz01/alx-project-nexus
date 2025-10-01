@@ -57,26 +57,30 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
 @swagger_auto_schema(
     method="post",
-    request_body=PaymentInitiateRequestSerializer,
-    responses={200: PaymentSerializer}
+    request_body=None,  # No input, order comes from user session
+    responses={201: PaymentSerializer, 400: "No pending order found"}
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def initiate_payment(request):
-    serializer = PaymentInitiateRequestSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    data = serializer.validated_data
+    # 1. Get latest pending order for user
+    order = Order.objects.filter(user=request.user, status="PENDING").last()
+    if not order:
+        return Response({"error": "No pending order found"}, status=400)
 
+    # 2. Generate transaction reference
     tx_ref = str(uuid.uuid4())
 
+    # 3. Build payload for Chapa (includes user details, but not saved in Payment)
     payload = {
-        "amount": str(data["amount"]), 
-        "currency": data["currency"],
-        "email": data["email"],
-        "first_name": data["first_name"],
-        "last_name": data["last_name"],
+        "amount": str(order.total_price),
+        "currency": "ETB",
+        "email": request.user.email,
+        "first_name": request.user.first_name,
+        "last_name": request.user.last_name,
         "tx_ref": tx_ref,
         "callback_url": "http://127.0.0.1:8000/api/payments/verify/",
         "return_url": "http://127.0.0.1:8000/payment/success/",
@@ -87,26 +91,27 @@ def initiate_payment(request):
         "Content-Type": "application/json",
     }
 
+    # 4. Call Chapa initialize API
     response = requests.post(
         f"{settings.CHAPA_BASE_URL}/transaction/initialize",
         json=payload,
         headers=headers,
     )
-
     chapa_data = response.json()
-    
-    
-    order = Order.objects.get(id=data["order_id"])
+
+    # 5. Save only Payment fields that exist
     payment = Payment.objects.create(
         order=order,
         tx_ref=tx_ref,
-        amount=data["amount"],
-        currency=data["currency"],
+        amount=order.total_price,
+        currency="ETB",
         status="pending",
     )
 
+    # 6. Return combined response
     return Response(
-        {"chapa_response": chapa_data, "payment": PaymentSerializer(payment).data}
+        {"chapa_response": chapa_data, "payment": PaymentSerializer(payment).data},
+        status=status.HTTP_201_CREATED
     )
 
 
@@ -136,22 +141,34 @@ def verify_payment(request, tx_ref):
 
     try:
         payment = Payment.objects.get(tx_ref=tx_ref)
-        if data.get("status") == "success" and data["data"].get("status") == "success":
-            payment.status = "completed"
-            payment.transaction_id = data["data"].get("reference") 
+        chapa_status = data.get("data", {}).get("status", "").lower()
 
-            #trigger Celery task here
+        if chapa_status == "success":
+            payment.status = "completed"
+            payment.transaction_id = data["data"].get("reference")
+
+            # ✅ Trigger Celery task on success
             from .tasks import send_payment_confirmation_email
             send_payment_confirmation_email.delay(
                 request.user.email, payment.order.id, str(payment.amount), payment.status
             )
-        else:
+
+        elif chapa_status == "failed":
             payment.status = "failed"
+
+        else:
+            # keep it pending if still processing
+            payment.status = "pending"
+
         payment.save()
+
     except Payment.DoesNotExist:
         return Response({"error": "Payment not found"}, status=404)
 
-    return Response({"chapa_response": data, "payment": PaymentSerializer(payment).data})
+    return Response({
+        "chapa_response": data,
+        "payment": PaymentSerializer(payment).data
+    })
 
 
 @api_view(["POST"])
