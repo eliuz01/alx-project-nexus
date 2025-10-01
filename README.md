@@ -14,13 +14,13 @@ This repository contains my final project for the **ALX ProDev Backend Engineeri
 * **Docker** – Simplifying development and deployment across environments
 * **CI/CD** – Setting up pipelines for continuous testing and delivery
 
-### Core Concepts
+### Core Concepts learned
 
 * **Database Design** – Creating schemas that balance performance and integrity
 * **Asynchronous Programming** – Improving responsiveness with async tasks
 * **Caching Strategies** – Reducing database load and speeding up requests
 
-### Challenges & Solutions
+### Challenges encountered & Solutions
 
 * Tackling slow queries → I learned to optimize ORM queries and indexes
 * Handling environment configurations → Adopted `django-environ` and containerized secrets
