@@ -24,6 +24,35 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        cart = Cart.objects.filter(user=user).first()
+
+        if not cart or not cart.items.exists():
+            raise ValidationError({"error": "Cart is empty"})
+
+        # Create the order
+        order = serializer.save(user=user, status="PENDING", total_price=0)
+
+        total_price = 0
+        for item in cart.items.all():
+            subtotal = item.product.price * item.quantity
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.price
+            )
+            total_price += subtotal
+
+        # Update total price
+        order.total_price = total_price
+        order.save()
+
+        # Clear the cart
+        cart.items.all().delete()   
+
+        
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -246,30 +275,45 @@ def remove_cart_item(request, item_id):
 
 @swagger_auto_schema(
     method="post",
-    request_body=None, 
+    request_body=None,
     responses={201: OrderSerializer, 400: "Cart is empty"}
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])  
 def create_order_from_cart(request):
+    # 1. Get the user’s cart
     cart = Cart.objects.filter(user=request.user).first()
     if not cart or not cart.items.exists():
         return Response({"error": "Cart is empty"}, status=400)
 
-    order = Order.objects.create(user=request.user, total_price=sum(item.subtotal for item in cart.items.all()))
+    # 2. Create the order
+    order = Order.objects.create(
+        user=request.user,
+        total_price=sum(item.subtotal for item in cart.items.all())
+    )
 
-    # Move items from cart to order
+    # 3. Move cart items into order
     for item in cart.items.all():
+        subtotal = item.product.price * item.quantity
         OrderItem.objects.create(
             order=order,
             product=item.product,
-            quantity=item.quantity
+            quantity=item.quantity,
+            price=item.product.price 
         )
-    # Optionally, clear the cart
+        total_price += subtotal
+
+    # 4. Update total
+    order.total_price = total_price
+    order.save()
+
+    #Clear the cart
     cart.items.all().delete()
 
+    #Return response
     serializer = OrderSerializer(order)
     return Response(serializer.data, status=201)
+
 
 @swagger_auto_schema(
     method="post",
