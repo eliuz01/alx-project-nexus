@@ -10,11 +10,16 @@ from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .tasks import send_payment_confirmation_email
+from django.shortcuts import render
+
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+def payment_success(request):
+    return render(request, "payment_success.html")
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
@@ -164,6 +169,14 @@ def verify_payment(request, tx_ref):
 
     except Payment.DoesNotExist:
         return Response({"error": "Payment not found"}, status=404)
+
+    # 🔹 Enrich Chapa response with local user details
+    user = request.user
+    if "data" in data:
+        data["data"]["first_name"] = user.first_name or ""
+        data["data"]["last_name"] = user.last_name or ""
+        data["data"]["email"] = user.email
+        data["data"]["phone_number"] = getattr(user, "phone_number", "") or ""
 
     return Response({
         "chapa_response": data,
@@ -444,3 +457,7 @@ def checkout(request):
         "payment": PaymentSerializer(payment).data,
         "chapa_response": chapa_data
     }, status=status.HTTP_201_CREATED)
+
+
+def payment_success(request):
+    return render(request, "payment_success.html")

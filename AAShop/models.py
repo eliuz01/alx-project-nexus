@@ -7,7 +7,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # keep username for Django admin convenience
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'phone_number']  
 
     def __str__(self):
         return self.email
