@@ -65,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @swagger_auto_schema(
     method="post",
-    request_body=None,  # No input, order comes from user session
+    request_body=None,  
     responses={201: PaymentSerializer, 400: "No pending order found"}
 )
 @api_view(["POST"])
@@ -152,7 +152,6 @@ def verify_payment(request, tx_ref):
             payment.status = "completed"
             payment.transaction_id = data["data"].get("reference")
 
-            # ✅ Trigger Celery task on success
             from .tasks import send_payment_confirmation_email
             send_payment_confirmation_email.delay(
                 request.user.email, payment.order.id, str(payment.amount), payment.status
@@ -162,7 +161,7 @@ def verify_payment(request, tx_ref):
             payment.status = "failed"
 
         else:
-            # keep it pending if still processing
+            
             payment.status = "pending"
 
         payment.save()
@@ -170,7 +169,6 @@ def verify_payment(request, tx_ref):
     except Payment.DoesNotExist:
         return Response({"error": "Payment not found"}, status=404)
 
-    # 🔹 Enrich Chapa response with local user details
     user = request.user
     if "data" in data:
         data["data"]["first_name"] = user.first_name or ""
@@ -185,7 +183,7 @@ def verify_payment(request, tx_ref):
 
 
 @api_view(["POST"])
-@permission_classes([])  # open endpoint, secured by signature later
+@permission_classes([]) 
 def chapa_webhook(request):
     data = request.data
     tx_ref = data.get("tx_ref")
